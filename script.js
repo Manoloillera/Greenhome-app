@@ -129,7 +129,7 @@ function renderAgenda() {
       const citaDiv = document.createElement("div");
       citaDiv.className = `cita estado-${estado}`;
       citaDiv.innerHTML = `
-        <div class="cita-hora">${cita.hora}</div>
+        <div class="cita-hora ${cita.hora ? "" : "cita-hora-accion"}">${cita.hora || "Acción"}</div>
         <div class="cita-info">
           <div class="cita-titulo">${escapeHtml(cita.titulo)}</div>
           <div class="cita-direccion">${escapeHtml(cita.direccion || "")}</div>
@@ -836,7 +836,9 @@ function renderDashboard() {
   citasHoy.forEach(c => {
     prioridades.push({
       urgente: false,
-      texto: `Cita ${c.hora} — ${c.titulo}${c.direccion ? " · " + c.direccion : ""}`,
+      texto: c.hora
+        ? `Cita ${c.hora} — ${c.titulo}${c.direccion ? " · " + c.direccion : ""}`
+        : `Acción — ${c.titulo}`,
       accion: () => mostrarVista("view-agenda", "agenda")
     });
   });

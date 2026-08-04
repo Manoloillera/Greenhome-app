@@ -122,6 +122,14 @@ body {
   min-width: 42px;
 }
 
+.cita-hora-accion {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #5e35b1;
+  letter-spacing: 0.5px;
+}
+
 .cita-info {
   flex: 1;
   min-width: 0;
