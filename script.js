@@ -128,6 +128,7 @@ function renderAgenda() {
       const estado = cita.estado || "pendiente";
       const citaDiv = document.createElement("div");
       citaDiv.className = `cita estado-${estado}`;
+      citaDiv.setAttribute("data-id", cita.id);
       citaDiv.innerHTML = `
         <div class="cita-hora ${cita.hora ? "" : "cita-hora-accion"}">${cita.hora || "Acción"}</div>
         <div class="cita-info">
@@ -143,8 +144,13 @@ function renderAgenda() {
     contenedor.appendChild(grupoDiv);
   });
 
+  contenedor.querySelectorAll(".cita").forEach(div => {
+    div.addEventListener("click", () => abrirEditarCita(div.getAttribute("data-id")));
+  });
+
   contenedor.querySelectorAll(".cita-borrar").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
       const id = btn.getAttribute("data-id");
       guardar(STORAGE_CITAS, cargar(STORAGE_CITAS).filter(c => c.id !== id));
       renderAgenda();
@@ -152,7 +158,8 @@ function renderAgenda() {
   });
 
   contenedor.querySelectorAll(".estado-pill").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
       const id = btn.getAttribute("data-id");
       const nuevasCitas = cargar(STORAGE_CITAS).map(c => {
         if (c.id !== id) return c;
@@ -174,28 +181,48 @@ document.querySelectorAll(".tab").forEach(tab => {
   });
 });
 
+let citaEditandoId = null;
+
 document.getElementById("btn-add-cita").addEventListener("click", () => {
+  citaEditandoId = null;
+  document.getElementById("modal-cita-titulo").textContent = "Nueva cita o acción";
   document.getElementById("form-cita").reset();
   document.getElementById("input-fecha").value = new Date().toISOString().slice(0, 10);
   abrirModal("modal-cita");
 });
 
+function abrirEditarCita(id) {
+  const cita = cargar(STORAGE_CITAS).find(c => c.id === id);
+  if (!cita) return;
+  citaEditandoId = cita.id;
+  document.getElementById("modal-cita-titulo").textContent = "Editar cita o acción";
+  document.getElementById("input-titulo").value = cita.titulo;
+  document.getElementById("input-direccion").value = cita.direccion || "";
+  document.getElementById("input-fecha").value = cita.fecha;
+  document.getElementById("input-hora").value = cita.hora || "";
+  document.getElementById("input-telefono").value = cita.telefono || "";
+  abrirModal("modal-cita");
+}
+
 document.getElementById("form-cita").addEventListener("submit", (e) => {
   e.preventDefault();
 
-  const nuevaCita = {
-    id: Date.now().toString(),
+  const datos = {
     titulo: document.getElementById("input-titulo").value.trim(),
     direccion: document.getElementById("input-direccion").value.trim(),
     fecha: document.getElementById("input-fecha").value,
     hora: document.getElementById("input-hora").value,
-    telefono: document.getElementById("input-telefono").value.trim(),
-    estado: "pendiente"
+    telefono: document.getElementById("input-telefono").value.trim()
   };
 
   const citas = cargar(STORAGE_CITAS);
-  citas.push(nuevaCita);
-  guardar(STORAGE_CITAS, citas);
+
+  if (citaEditandoId) {
+    guardar(STORAGE_CITAS, citas.map(c => c.id === citaEditandoId ? { ...c, ...datos } : c));
+  } else {
+    citas.push({ id: Date.now().toString(), estado: "pendiente", ...datos });
+    guardar(STORAGE_CITAS, citas);
+  }
 
   cerrarModal("modal-cita");
   renderAgenda();
