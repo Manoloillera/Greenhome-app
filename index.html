@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GreenHome</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="phone">
+  <div class="card">
+
+    <!-- ===== VISTA DASHBOARD ===== -->
+    <div id="view-home" class="view active">
+      <div class="card-header">
+        <h1 id="dash-saludo">Hola, Manu 👋</h1>
+        <div class="dash-fecha" id="dash-fecha"></div>
+      </div>
+
+      <div class="dash-resumen" id="dash-resumen"></div>
+
+      <div class="dash-seccion-titulo">Prioridades para hoy</div>
+      <div id="dash-prioridades" class="dash-lista">
+        <!-- Se genera con JavaScript -->
+      </div>
+
+      <div class="stats-finanzas">
+        <div class="stat-card pendientes">
+          <div class="stat-valor" id="dash-pendientes">0</div>
+          <div class="stat-label">Pendientes</div>
+        </div>
+        <div class="stat-card reuniones">
+          <div class="stat-valor" id="dash-reuniones">0</div>
+          <div class="stat-label">Reuniones</div>
+        </div>
+        <div class="stat-card cumplimiento">
+          <div class="stat-valor" id="dash-cumplimiento">0%</div>
+          <div class="stat-label">Cumplimiento</div>
+        </div>
+      </div>
+
+      <div id="dash-alerta" class="dash-alerta"></div>
+
+      <div class="dash-seccion-titulo">Atención urgente</div>
+      <div id="dash-urgentes" class="lista-leads">
+        <!-- Se genera con JavaScript -->
+      </div>
+
+      <div class="dash-backup">
+        <button id="btn-exportar-datos" class="btn-editar">⬇ Exportar copia de seguridad</button>
+        <button id="btn-importar-datos" class="btn-editar">⬆ Restaurar copia de seguridad</button>
+        <input type="file" id="input-importar-datos" accept="application/json" hidden>
+      </div>
+    </div>
+
+    <!-- ===== VISTA AGENDA ===== -->
+    <div id="view-agenda" class="view">
+      <div class="card-header">
+        <h1>Agenda</h1>
+        <div class="tabs">
+          <button class="tab active" data-view="dia">Día</button>
+          <button class="tab" data-view="semana">Semana</button>
+        </div>
+      </div>
+
+      <div id="lista-citas" class="lista-citas">
+        <!-- Las citas se generan aquí con JavaScript -->
+      </div>
+
+      <button id="btn-add-cita" class="btn-add">+</button>
+    </div>
+
+    <!-- ===== VISTA LEADS ===== -->
+    <div id="view-leads" class="view">
+      <div class="card-header">
+        <h1>Leads</h1>
+        <div class="subtitulo" id="leads-total">0</div>
+      </div>
+
+      <input type="text" id="buscador-leads" class="buscador" placeholder="Buscar Nombre, Teléfono o Referencia">
+
+      <div id="filtros-leads" class="filtros">
+        <!-- Las píldoras de filtro se generan aquí con JavaScript -->
+      </div>
+
+      <div id="lista-leads" class="lista-leads">
+        <!-- Los leads se generan aquí con JavaScript -->
+      </div>
+
+      <button id="btn-add-lead" class="btn-add">+</button>
+    </div>
+
+    <!-- ===== VISTA DETALLE DE LEAD ===== -->
+    <div id="view-lead-detalle" class="view">
+      <div class="detalle-toolbar">
+        <button id="btn-volver-leads" class="btn-volver">‹ Leads</button>
+        <button id="btn-editar-lead" class="btn-editar">Editar</button>
+      </div>
+
+      <div class="detalle-cliente">
+        <div class="lead-avatar lead-avatar-grande" id="detalle-avatar"></div>
+        <div class="detalle-info">
+          <div class="detalle-nombre" id="detalle-nombre"></div>
+          <div class="detalle-referencia" id="detalle-referencia"></div>
+          <div class="detalle-telefono" id="detalle-telefono"></div>
+        </div>
+        <button class="lead-badge" id="detalle-estado"></button>
+      </div>
+
+      <div class="detalle-historial-titulo">Historial de seguimiento</div>
+      <div id="detalle-historial" class="detalle-historial">
+        <!-- Las observaciones se generan aquí con JavaScript -->
+      </div>
+
+      <form id="form-observacion" class="form-observacion">
+        <textarea id="obs-texto" required placeholder="Añadir observación... (ej: Interesada, volver a llamar tras vacaciones)"></textarea>
+        <label class="obs-seguimiento-label">
+          <input type="checkbox" id="obs-marcar-seguimiento"> Volver a contactar el
+          <input type="date" id="obs-fecha-seguimiento">
+        </label>
+        <button type="submit" class="btn-primario">Guardar observación</button>
+      </form>
+    </div>
+
+    <!-- ===== VISTA EXPEDIENTES ===== -->
+    <div id="view-expedientes" class="view">
+      <div class="card-header">
+        <h1>Expedientes</h1>
+        <div class="subtitulo"><span id="expedientes-en-gestion">0</span> en gestión</div>
+      </div>
+
+      <input type="text" id="buscador-expedientes" class="buscador" placeholder="Buscar por dirección o cliente">
+
+      <div id="filtros-expedientes" class="filtros">
+        <!-- Las píldoras de filtro se generan aquí con JavaScript -->
+      </div>
+
+      <div id="lista-expedientes" class="lista-leads">
+        <!-- Los expedientes se generan aquí con JavaScript -->
+      </div>
+
+      <button id="btn-add-expediente" class="btn-add">+</button>
+    </div>
+
+    <!-- ===== VISTA DETALLE DE EXPEDIENTE ===== -->
+    <div id="view-expediente-detalle" class="view">
+      <div class="detalle-toolbar">
+        <button id="btn-volver-expedientes" class="btn-volver">‹ Expedientes</button>
+        <button id="btn-editar-expediente" class="btn-editar">Editar</button>
+      </div>
+
+      <div class="detalle-expediente-header">
+        <div>
+          <div class="detalle-nombre" id="det-exp-direccion"></div>
+          <div class="detalle-referencia" id="det-exp-cliente"></div>
+        </div>
+        <button class="expediente-badge" id="det-exp-estado"></button>
+      </div>
+
+      <div class="progreso-barra"><div class="progreso-fill" id="det-exp-progreso-fill"></div></div>
+      <div class="progreso-texto" id="det-exp-progreso-texto"></div>
+
+      <div class="detalle-historial-titulo">Checklist</div>
+      <div id="det-exp-checklist" class="checklist">
+        <!-- Los elementos del checklist se generan aquí con JavaScript -->
+      </div>
+    </div>
+
+    <!-- ===== VISTA FINANZAS ===== -->
+    <div id="view-finanzas" class="view">
+      <div class="card-header">
+        <h1>Finanzas</h1>
+        <div class="subtitulo" id="finanzas-mes"></div>
+      </div>
+
+      <div class="stats-finanzas">
+        <div class="stat-card gasto">
+          <div class="stat-valor" id="finanzas-gastos">0€</div>
+          <div class="stat-label">Gastos</div>
+        </div>
+        <div class="stat-card ingreso">
+          <div class="stat-valor" id="finanzas-ingresos">0€</div>
+          <div class="stat-label">Ingresos</div>
+        </div>
+        <div class="stat-card balance">
+          <div class="stat-valor" id="finanzas-balance">0€</div>
+          <div class="stat-label">Balance</div>
+        </div>
+      </div>
+
+      <div id="lista-finanzas" class="lista-finanzas">
+        <!-- Los movimientos se generan aquí con JavaScript -->
+      </div>
+
+      <button id="btn-add-finanza" class="btn-add">+</button>
+    </div>
+
+    <!-- ===== NAVEGACIÓN INFERIOR ===== -->
+    <div class="bottom-nav">
+      <button class="nav-item" data-page="leads">
+        <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+        <span>Leads</span>
+      </button>
+      <button class="nav-item" data-page="expedientes">
+        <svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+        <span>Expedientes</span>
+      </button>
+      <button class="nav-item active" data-page="home">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span>Home</span>
+      </button>
+      <button class="nav-item" data-page="agenda">
+        <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+        <span>Agenda</span>
+      </button>
+      <button class="nav-item" data-page="finanzas">
+        <svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+        <span>Finanzas</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== MODAL NUEVA CITA ===== -->
+<div id="modal-cita" class="modal-overlay">
+  <div class="modal">
+    <h2>Nueva cita</h2>
+    <form id="form-cita">
+      <label>Cliente / Título
+        <input type="text" id="input-titulo" required placeholder="Ej: Marta López">
+      </label>
+      <label>Dirección
+        <input type="text" id="input-direccion" placeholder="Ej: Calle Oviedo 11, 2ºB">
+      </label>
+      <label>Fecha
+        <input type="date" id="input-fecha" required>
+      </label>
+      <label>Hora
+        <input type="time" id="input-hora" required>
+      </label>
+      <label>Teléfono
+        <input type="tel" id="input-telefono" placeholder="Ej: 612 345 678">
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn-secundario" data-cerrar="modal-cita">Cancelar</button>
+        <button type="submit" class="btn-primario">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== MODAL NUEVO LEAD ===== -->
+<div id="modal-lead" class="modal-overlay">
+  <div class="modal">
+    <h2 id="modal-lead-titulo">Nuevo lead</h2>
+    <form id="form-lead">
+      <label>Nombre
+        <input type="text" id="lead-nombre" required placeholder="Ej: Pedro López">
+      </label>
+      <label>Referencia (zona / dirección del piso)
+        <input type="text" id="lead-referencia" placeholder="Ej: Hortaleza, Las Águilas, C/ Oviedo">
+      </label>
+      <label>Teléfono
+        <input type="tel" id="lead-telefono" placeholder="Ej: 640 643 248">
+      </label>
+      <label>Estado
+        <select id="lead-estado">
+          <option value="nuevo">Nuevo</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="seguimiento">Seguimiento</option>
+          <option value="urgente">Urgente</option>
+          <option value="descartado">Descartado</option>
+        </select>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn-secundario" data-cerrar="modal-lead">Cancelar</button>
+        <button type="submit" class="btn-primario">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== MODAL NUEVO/EDITAR EXPEDIENTE ===== -->
+<div id="modal-expediente" class="modal-overlay">
+  <div class="modal">
+    <h2 id="modal-expediente-titulo">Nuevo expediente</h2>
+    <form id="form-expediente">
+      <label>Dirección
+        <input type="text" id="expediente-direccion" required placeholder="Ej: Calle Bravo Murillo 45, 3ºB">
+      </label>
+      <label>Cliente
+        <input type="text" id="expediente-cliente" placeholder="Ej: Marta López">
+      </label>
+      <label>Estado
+        <select id="expediente-estado">
+          <option value="en_curso">En Curso</option>
+          <option value="devuelto">Devuelto</option>
+          <option value="vendido">Vendido</option>
+        </select>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn-secundario" data-cerrar="modal-expediente">Cancelar</button>
+        <button type="submit" class="btn-primario">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== MODAL NUEVO/EDITAR MOVIMIENTO ===== -->
+<div id="modal-finanza" class="modal-overlay">
+  <div class="modal">
+    <h2 id="modal-finanza-titulo">Nuevo movimiento</h2>
+    <form id="form-finanza">
+      <label>Concepto
+        <input type="text" id="finanza-concepto" required placeholder="Ej: Idealista">
+      </label>
+      <label>Categoría
+        <select id="finanza-categoria">
+          <option value="gastos_fijos">Gastos Fijos</option>
+          <option value="gastos_variables">Gastos Variables</option>
+          <option value="ingresos">Ingresos</option>
+        </select>
+      </label>
+      <label>Importe (€)
+        <input type="number" id="finanza-importe" required min="0" step="0.01" placeholder="Ej: 90">
+      </label>
+      <label>Fecha
+        <input type="date" id="finanza-fecha" required>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn-secundario" data-cerrar="modal-finanza">Cancelar</button>
+        <button type="submit" class="btn-primario">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
