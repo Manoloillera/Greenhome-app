@@ -172,6 +172,31 @@
       <div id="det-exp-checklist" class="checklist">
         <!-- Los elementos del checklist se generan aquí con JavaScript -->
       </div>
+
+      <div class="detalle-historial-titulo">Costes</div>
+      <form id="form-costes" class="form-costes">
+        <label>Comunidad mensual (€)
+          <input type="number" id="costes-comunidad" min="0" step="0.01" placeholder="0">
+        </label>
+        <label>IBI anual (€)
+          <input type="number" id="costes-ibi" min="0" step="0.01" placeholder="0">
+        </label>
+        <label>Tasa de basuras anual (€)
+          <input type="number" id="costes-basuras" min="0" step="0.01" placeholder="0">
+        </label>
+        <label class="check-inline">
+          <input type="checkbox" id="costes-tiene-derramas"> ¿Tiene derramas activas?
+        </label>
+        <div id="costes-derrama-campos" class="costes-derrama-campos" hidden>
+          <label>Importe de la derrama (€)
+            <input type="number" id="costes-derrama-importe" min="0" step="0.01" placeholder="0">
+          </label>
+          <label>Descripción breve
+            <input type="text" id="costes-derrama-descripcion" placeholder="Ej: Reforma fachada, pendiente 8 meses">
+          </label>
+        </div>
+        <button type="submit" class="btn-primario">Guardar costes</button>
+      </form>
     </div>
 
     <!-- ===== VISTA FINANZAS ===== -->

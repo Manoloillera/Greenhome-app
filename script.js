@@ -129,11 +129,12 @@ function renderAgenda() {
       const citaDiv = document.createElement("div");
       citaDiv.className = `cita estado-${estado}`;
       citaDiv.setAttribute("data-id", cita.id);
+      const detalles = [cita.direccion, cita.telefono].filter(Boolean).join(" · ");
       citaDiv.innerHTML = `
         <div class="cita-hora ${cita.hora ? "" : "cita-hora-accion"}">${cita.hora || "Acción"}</div>
         <div class="cita-info">
           <div class="cita-titulo">${escapeHtml(cita.titulo)}</div>
-          <div class="cita-direccion">${escapeHtml(cita.direccion || "")}</div>
+          <div class="cita-direccion">${escapeHtml(detalles)}</div>
         </div>
         <button class="estado-pill estado-${estado}" data-id="${cita.id}">${ESTADO_CITA_LABEL[estado]}</button>
         <button class="cita-borrar" data-id="${cita.id}">✕</button>
@@ -483,6 +484,17 @@ function progresoExpediente(exp) {
   return Math.round((hechos / checklist.length) * 100);
 }
 
+function costesDe(exp) {
+  return exp.costes || {
+    comunidadMensual: 0,
+    ibiAnual: 0,
+    tasaBasurasAnual: 0,
+    tieneDerramas: false,
+    derramaImporte: 0,
+    derramaDescripcion: ""
+  };
+}
+
 function renderFiltrosExpedientes(expedientes) {
   const contenedor = document.getElementById("filtros-expedientes");
   contenedor.innerHTML = "";
@@ -661,7 +673,40 @@ function renderDetalleExpediente() {
     });
     contenedor.appendChild(div);
   });
+
+  const costes = costesDe(exp);
+  document.getElementById("costes-comunidad").value = costes.comunidadMensual || "";
+  document.getElementById("costes-ibi").value = costes.ibiAnual || "";
+  document.getElementById("costes-basuras").value = costes.tasaBasurasAnual || "";
+  document.getElementById("costes-tiene-derramas").checked = !!costes.tieneDerramas;
+  document.getElementById("costes-derrama-importe").value = costes.derramaImporte || "";
+  document.getElementById("costes-derrama-descripcion").value = costes.derramaDescripcion || "";
+  document.getElementById("costes-derrama-campos").hidden = !costes.tieneDerramas;
 }
+
+document.getElementById("costes-tiene-derramas").addEventListener("change", (e) => {
+  document.getElementById("costes-derrama-campos").hidden = !e.target.checked;
+});
+
+document.getElementById("form-costes").addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  const tieneDerramas = document.getElementById("costes-tiene-derramas").checked;
+  const nuevosCostes = {
+    comunidadMensual: Number(document.getElementById("costes-comunidad").value) || 0,
+    ibiAnual: Number(document.getElementById("costes-ibi").value) || 0,
+    tasaBasurasAnual: Number(document.getElementById("costes-basuras").value) || 0,
+    tieneDerramas,
+    derramaImporte: tieneDerramas ? (Number(document.getElementById("costes-derrama-importe").value) || 0) : 0,
+    derramaDescripcion: tieneDerramas ? document.getElementById("costes-derrama-descripcion").value.trim() : ""
+  };
+
+  const nuevosExpedientes = cargar(STORAGE_EXPEDIENTES).map(x =>
+    x.id === expedienteActualId ? { ...x, costes: nuevosCostes } : x
+  );
+  guardar(STORAGE_EXPEDIENTES, nuevosExpedientes);
+  alert("Costes guardados.");
+});
 
 document.getElementById("btn-volver-expedientes").addEventListener("click", () => {
   mostrarVista("view-expedientes", "expedientes");

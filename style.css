@@ -615,6 +615,48 @@ body {
   color: #aaa;
 }
 
+.form-costes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.form-costes label {
+  font-size: 13px;
+  color: #555;
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-costes input[type="number"],
+.form-costes input[type="text"] {
+  font-size: 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  font-weight: 400;
+  color: #1a1a1a;
+}
+
+.check-inline {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+}
+
+.costes-derrama-campos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #fafafa;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 12px;
+}
+
 /* Ficha de lead */
 .detalle-toolbar {
   display: flex;
