@@ -243,6 +243,82 @@
       <div id="det-exp-checklist" class="checklist">
         <!-- Los elementos del checklist se generan aquí con JavaScript -->
       </div>
+
+      <div class="detalle-historial-titulo">A tu alrededor</div>
+      <form id="form-entorno" class="form-costes">
+        <div class="entorno-fila">
+          <label class="entorno-titulo">Colegio</label>
+          <div class="entorno-inputs">
+            <input type="text" id="entorno-colegio-nombre" placeholder="Nombre">
+            <input type="number" id="entorno-colegio-metros" min="0" placeholder="m">
+            <input type="number" id="entorno-colegio-minutos" min="0" placeholder="min">
+          </div>
+        </div>
+        <div class="entorno-fila">
+          <label class="entorno-titulo">Farmacia</label>
+          <div class="entorno-inputs">
+            <input type="text" id="entorno-farmacia-nombre" placeholder="Nombre">
+            <input type="number" id="entorno-farmacia-metros" min="0" placeholder="m">
+            <input type="number" id="entorno-farmacia-minutos" min="0" placeholder="min">
+          </div>
+        </div>
+        <div class="entorno-fila">
+          <label class="entorno-titulo">Supermercado</label>
+          <div class="entorno-inputs">
+            <input type="text" id="entorno-supermercado-nombre" placeholder="Nombre">
+            <input type="number" id="entorno-supermercado-metros" min="0" placeholder="m">
+            <input type="number" id="entorno-supermercado-minutos" min="0" placeholder="min">
+          </div>
+        </div>
+        <div class="entorno-fila">
+          <label class="entorno-titulo">Centro de salud</label>
+          <div class="entorno-inputs">
+            <input type="text" id="entorno-salud-nombre" placeholder="Nombre">
+            <input type="number" id="entorno-salud-metros" min="0" placeholder="m">
+            <input type="number" id="entorno-salud-minutos" min="0" placeholder="min">
+          </div>
+        </div>
+        <div class="entorno-fila">
+          <label class="entorno-titulo">Parque</label>
+          <div class="entorno-inputs">
+            <input type="text" id="entorno-parque-nombre" placeholder="Nombre">
+            <input type="number" id="entorno-parque-metros" min="0" placeholder="m">
+            <input type="number" id="entorno-parque-minutos" min="0" placeholder="min">
+          </div>
+        </div>
+        <div class="entorno-fila">
+          <label class="entorno-titulo">Deporte</label>
+          <div class="entorno-inputs">
+            <input type="text" id="entorno-deporte-nombre" placeholder="Nombre">
+            <input type="number" id="entorno-deporte-metros" min="0" placeholder="m">
+            <input type="number" id="entorno-deporte-minutos" min="0" placeholder="min">
+          </div>
+        </div>
+
+        <div class="detalle-historial-titulo">Cómo moverte</div>
+        <div class="entorno-fila">
+          <label class="entorno-titulo">Metro</label>
+          <div class="entorno-inputs">
+            <input type="text" id="entorno-metro-nombre" placeholder="Nombre / línea">
+            <input type="number" id="entorno-metro-metros" min="0" placeholder="m">
+            <input type="number" id="entorno-metro-minutos" min="0" placeholder="min">
+          </div>
+        </div>
+        <div class="entorno-fila">
+          <label class="entorno-titulo">Autobús</label>
+          <div class="entorno-inputs">
+            <input type="text" id="entorno-autobus-nombre" placeholder="Nombre / línea">
+            <input type="number" id="entorno-autobus-metros" min="0" placeholder="m">
+            <input type="number" id="entorno-autobus-minutos" min="0" placeholder="min">
+          </div>
+        </div>
+
+        <label>Resumen (tus notas de la visita)
+          <textarea id="entorno-resumen" rows="4" placeholder="2-3 líneas sobre el piso y la zona..."></textarea>
+        </label>
+
+        <button type="submit" class="btn-primario">Guardar entorno</button>
+      </form>
     </div>
 
     <!-- ===== VISTA FINANZAS ===== -->

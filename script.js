@@ -495,6 +495,35 @@ function costesDe(exp) {
   };
 }
 
+function datosPisoDe(exp) {
+  return exp.datosPiso || {
+    fotoPrincipal: "",
+    precio: 0,
+    superficie: 0,
+    dormitorios: 0,
+    banos: 0,
+    terraza: 0,
+    planta: "",
+    orientacion: "",
+    ascensor: false,
+    equipado: false,
+    amueblado: false,
+    garaje: false,
+    trastero: false
+  };
+}
+
+const ENTORNO_CLAVES = ["colegio", "farmacia", "supermercado", "salud", "parque", "deporte", "metro", "autobus"];
+
+function entornoDe(exp) {
+  if (exp.entorno) return exp.entorno;
+  const vacio = { resumen: "" };
+  ENTORNO_CLAVES.forEach(clave => {
+    vacio[clave] = { nombre: "", metros: 0, minutos: 0 };
+  });
+  return vacio;
+}
+
 function renderFiltrosExpedientes(expedientes) {
   const contenedor = document.getElementById("filtros-expedientes");
   contenedor.innerHTML = "";
@@ -626,6 +655,7 @@ document.getElementById("form-expediente").addEventListener("submit", (e) => {
 /* ============ FICHA DE EXPEDIENTE ============ */
 
 let expedienteActualId = null;
+let fotoPrincipalActual = "";
 
 function abrirDetalleExpediente(id) {
   expedienteActualId = id;
@@ -682,6 +712,39 @@ function renderDetalleExpediente() {
   document.getElementById("costes-derrama-importe").value = costes.derramaImporte || "";
   document.getElementById("costes-derrama-descripcion").value = costes.derramaDescripcion || "";
   document.getElementById("costes-derrama-campos").hidden = !costes.tieneDerramas;
+
+  const piso = datosPisoDe(exp);
+  document.getElementById("piso-precio").value = piso.precio || "";
+  document.getElementById("piso-superficie").value = piso.superficie || "";
+  document.getElementById("piso-dormitorios").value = piso.dormitorios || "";
+  document.getElementById("piso-banos").value = piso.banos || "";
+  document.getElementById("piso-terraza").value = piso.terraza || "";
+  document.getElementById("piso-planta").value = piso.planta || "";
+  document.getElementById("piso-orientacion").value = piso.orientacion || "";
+  document.getElementById("piso-ascensor").checked = !!piso.ascensor;
+  document.getElementById("piso-equipado").checked = !!piso.equipado;
+  document.getElementById("piso-amueblado").checked = !!piso.amueblado;
+  document.getElementById("piso-garaje").checked = !!piso.garaje;
+  document.getElementById("piso-trastero").checked = !!piso.trastero;
+
+  const previewFoto = document.getElementById("piso-foto-preview");
+  document.getElementById("piso-foto").value = "";
+  fotoPrincipalActual = piso.fotoPrincipal || "";
+  if (fotoPrincipalActual) {
+    previewFoto.src = fotoPrincipalActual;
+    previewFoto.hidden = false;
+  } else {
+    previewFoto.hidden = true;
+  }
+
+  const entorno = entornoDe(exp);
+  ENTORNO_CLAVES.forEach(clave => {
+    const item = entorno[clave] || { nombre: "", metros: 0, minutos: 0 };
+    document.getElementById(`entorno-${clave}-nombre`).value = item.nombre || "";
+    document.getElementById(`entorno-${clave}-metros`).value = item.metros || "";
+    document.getElementById(`entorno-${clave}-minutos`).value = item.minutos || "";
+  });
+  document.getElementById("entorno-resumen").value = entorno.resumen || "";
 }
 
 document.getElementById("costes-tiene-derramas").addEventListener("change", (e) => {
@@ -706,6 +769,65 @@ document.getElementById("form-costes").addEventListener("submit", (e) => {
   );
   guardar(STORAGE_EXPEDIENTES, nuevosExpedientes);
   alert("Costes guardados.");
+});
+
+document.getElementById("piso-foto").addEventListener("change", (e) => {
+  const archivo = e.target.files[0];
+  if (!archivo) return;
+
+  const lector = new FileReader();
+  lector.onload = () => {
+    fotoPrincipalActual = lector.result;
+    const previewFoto = document.getElementById("piso-foto-preview");
+    previewFoto.src = fotoPrincipalActual;
+    previewFoto.hidden = false;
+  };
+  lector.readAsDataURL(archivo);
+});
+
+document.getElementById("form-piso").addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  const nuevoPiso = {
+    fotoPrincipal: fotoPrincipalActual,
+    precio: Number(document.getElementById("piso-precio").value) || 0,
+    superficie: Number(document.getElementById("piso-superficie").value) || 0,
+    dormitorios: Number(document.getElementById("piso-dormitorios").value) || 0,
+    banos: Number(document.getElementById("piso-banos").value) || 0,
+    terraza: Number(document.getElementById("piso-terraza").value) || 0,
+    planta: document.getElementById("piso-planta").value.trim(),
+    orientacion: document.getElementById("piso-orientacion").value,
+    ascensor: document.getElementById("piso-ascensor").checked,
+    equipado: document.getElementById("piso-equipado").checked,
+    amueblado: document.getElementById("piso-amueblado").checked,
+    garaje: document.getElementById("piso-garaje").checked,
+    trastero: document.getElementById("piso-trastero").checked
+  };
+
+  const nuevosExpedientes = cargar(STORAGE_EXPEDIENTES).map(x =>
+    x.id === expedienteActualId ? { ...x, datosPiso: nuevoPiso } : x
+  );
+  guardar(STORAGE_EXPEDIENTES, nuevosExpedientes);
+  alert("Datos del piso guardados.");
+});
+
+document.getElementById("form-entorno").addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  const nuevoEntorno = { resumen: document.getElementById("entorno-resumen").value.trim() };
+  ENTORNO_CLAVES.forEach(clave => {
+    nuevoEntorno[clave] = {
+      nombre: document.getElementById(`entorno-${clave}-nombre`).value.trim(),
+      metros: Number(document.getElementById(`entorno-${clave}-metros`).value) || 0,
+      minutos: Number(document.getElementById(`entorno-${clave}-minutos`).value) || 0
+    };
+  });
+
+  const nuevosExpedientes = cargar(STORAGE_EXPEDIENTES).map(x =>
+    x.id === expedienteActualId ? { ...x, entorno: nuevoEntorno } : x
+  );
+  guardar(STORAGE_EXPEDIENTES, nuevosExpedientes);
+  alert("Entorno guardado.");
 });
 
 document.getElementById("btn-volver-expedientes").addEventListener("click", () => {
