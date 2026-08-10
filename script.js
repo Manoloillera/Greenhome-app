@@ -728,13 +728,16 @@ function renderDetalleExpediente() {
   document.getElementById("piso-trastero").checked = !!piso.trastero;
 
   const previewFoto = document.getElementById("piso-foto-preview");
+  const btnQuitarFoto = document.getElementById("btn-quitar-foto");
   document.getElementById("piso-foto").value = "";
   fotoPrincipalActual = piso.fotoPrincipal || "";
   if (fotoPrincipalActual) {
     previewFoto.src = fotoPrincipalActual;
     previewFoto.hidden = false;
+    btnQuitarFoto.hidden = false;
   } else {
     previewFoto.hidden = true;
+    btnQuitarFoto.hidden = true;
   }
 
   const entorno = entornoDe(exp);
@@ -778,11 +781,18 @@ document.getElementById("piso-foto").addEventListener("change", (e) => {
   const lector = new FileReader();
   lector.onload = () => {
     fotoPrincipalActual = lector.result;
-    const previewFoto = document.getElementById("piso-foto-preview");
-    previewFoto.src = fotoPrincipalActual;
-    previewFoto.hidden = false;
+    document.getElementById("piso-foto-preview").src = fotoPrincipalActual;
+    document.getElementById("piso-foto-preview").hidden = false;
+    document.getElementById("btn-quitar-foto").hidden = false;
   };
   lector.readAsDataURL(archivo);
+});
+
+document.getElementById("btn-quitar-foto").addEventListener("click", () => {
+  fotoPrincipalActual = "";
+  document.getElementById("piso-foto").value = "";
+  document.getElementById("piso-foto-preview").hidden = true;
+  document.getElementById("btn-quitar-foto").hidden = true;
 });
 
 document.getElementById("form-piso").addEventListener("submit", (e) => {
