@@ -168,10 +168,51 @@
       <div class="progreso-barra"><div class="progreso-fill" id="det-exp-progreso-fill"></div></div>
       <div class="progreso-texto" id="det-exp-progreso-texto"></div>
 
-      <div class="detalle-historial-titulo">Checklist</div>
-      <div id="det-exp-checklist" class="checklist">
-        <!-- Los elementos del checklist se generan aquí con JavaScript -->
-      </div>
+      <div class="detalle-historial-titulo">Datos del piso</div>
+      <form id="form-piso" class="form-costes">
+        <label>Foto principal
+          <input type="file" id="piso-foto" accept="image/*">
+        </label>
+        <img id="piso-foto-preview" class="piso-foto-preview" hidden>
+
+        <label>Precio (€)
+          <input type="number" id="piso-precio" min="0" step="0.01" placeholder="0">
+        </label>
+        <label>Superficie construida (m²)
+          <input type="number" id="piso-superficie" min="0" step="0.01" placeholder="0">
+        </label>
+        <label>Dormitorios
+          <input type="number" id="piso-dormitorios" min="0" step="1" placeholder="0">
+        </label>
+        <label>Baños
+          <input type="number" id="piso-banos" min="0" step="1" placeholder="0">
+        </label>
+        <label>Terraza (m²)
+          <input type="number" id="piso-terraza" min="0" step="0.01" placeholder="0 si no tiene">
+        </label>
+        <label>Planta
+          <input type="text" id="piso-planta" placeholder="Ej: 3, bajo, ático">
+        </label>
+        <label>Orientación
+          <select id="piso-orientacion">
+            <option value="">Sin especificar</option>
+            <option value="norte">Norte</option>
+            <option value="sur">Sur</option>
+            <option value="este">Este</option>
+            <option value="oeste">Oeste</option>
+            <option value="noreste">Noreste</option>
+            <option value="noroeste">Noroeste</option>
+            <option value="sureste">Sureste</option>
+            <option value="suroeste">Suroeste</option>
+          </select>
+        </label>
+        <label class="check-inline"><input type="checkbox" id="piso-ascensor"> Ascensor</label>
+        <label class="check-inline"><input type="checkbox" id="piso-equipado"> Equipado</label>
+        <label class="check-inline"><input type="checkbox" id="piso-amueblado"> Amueblado</label>
+        <label class="check-inline"><input type="checkbox" id="piso-garaje"> Garaje</label>
+        <label class="check-inline"><input type="checkbox" id="piso-trastero"> Trastero</label>
+        <button type="submit" class="btn-primario">Guardar datos del piso</button>
+      </form>
 
       <div class="detalle-historial-titulo">Costes</div>
       <form id="form-costes" class="form-costes">
@@ -197,6 +238,11 @@
         </div>
         <button type="submit" class="btn-primario">Guardar costes</button>
       </form>
+
+      <div class="detalle-historial-titulo">Checklist</div>
+      <div id="det-exp-checklist" class="checklist">
+        <!-- Los elementos del checklist se generan aquí con JavaScript -->
+      </div>
     </div>
 
     <!-- ===== VISTA FINANZAS ===== -->
