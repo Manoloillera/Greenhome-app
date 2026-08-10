@@ -748,6 +748,17 @@ function renderDetalleExpediente() {
     document.getElementById(`entorno-${clave}-minutos`).value = item.minutos || "";
   });
   document.getElementById("entorno-resumen").value = entorno.resumen || "";
+
+  const memoriaEstado = document.getElementById("memoria-estado");
+  const btnAbrirMemoria = document.getElementById("btn-abrir-memoria");
+  if (exp.memoriaVisita) {
+    const fecha = new Date(exp.memoriaVisita.generadaEl);
+    memoriaEstado.textContent = `Última memoria: ${fecha.toLocaleDateString("es-ES")} ${fecha.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`;
+    btnAbrirMemoria.hidden = false;
+  } else {
+    memoriaEstado.textContent = "Aún no se ha generado";
+    btnAbrirMemoria.hidden = true;
+  }
 }
 
 document.getElementById("costes-tiene-derramas").addEventListener("change", (e) => {
@@ -855,6 +866,240 @@ document.getElementById("det-exp-estado").addEventListener("click", () => {
 
 document.getElementById("btn-editar-expediente").addEventListener("click", () => {
   abrirEditarExpediente(expedienteActualId);
+});
+
+/* ============ MEMORIA DE LA VISITA (PDF) ============ */
+
+const ENTORNO_ETIQUETAS = {
+  colegio: "Colegio", farmacia: "Farmacia", supermercado: "Supermercado",
+  salud: "Centro de salud", parque: "Parque", deporte: "Deporte",
+  metro: "Metro", autobus: "Autobús"
+};
+
+const VERDE_MARCA = [46, 125, 50];
+const GRIS_TEXTO = [60, 60, 60];
+
+function cargarImagen(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+function recortarImagenCover(img, anchoMm, altoMm) {
+  const escala = 4;
+  const anchoPx = anchoMm * escala;
+  const altoPx = altoMm * escala;
+  const canvas = document.createElement("canvas");
+  canvas.width = anchoPx;
+  canvas.height = altoPx;
+  const ctx = canvas.getContext("2d");
+  const escalaImg = Math.max(anchoPx / img.width, altoPx / img.height);
+  const wDestino = img.width * escalaImg;
+  const hDestino = img.height * escalaImg;
+  ctx.drawImage(img, (anchoPx - wDestino) / 2, (altoPx - hDestino) / 2, wDestino, hDestino);
+  return canvas.toDataURL("image/jpeg", 0.85);
+}
+
+function escribirSeccionPDF(doc, titulo, margen, y) {
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...VERDE_MARCA);
+  doc.text(titulo, margen, y);
+  return y + 6;
+}
+
+function escribirLineaEntornoPDF(doc, item, margen, y, ancho) {
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(...GRIS_TEXTO);
+  let texto = `${item.etiqueta}: ${item.nombre}`;
+  if (item.metros) texto += ` — ${item.metros} m`;
+  if (item.minutos) texto += ` · ${item.minutos} min andando`;
+  const lineas = doc.splitTextToSize(texto, ancho);
+  doc.text(lineas, margen, y);
+  return y + lineas.length * 5.5;
+}
+
+async function generarMemoriaPDF(exp) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+
+  const margen = 15;
+  const ancho = 210 - margen * 2;
+  let y = margen;
+
+  const piso = datosPisoDe(exp);
+  const costes = costesDe(exp);
+  const entorno = entornoDe(exp);
+
+  if (piso.fotoPrincipal) {
+    try {
+      const img = await cargarImagen(piso.fotoPrincipal);
+      const altoFoto = 55;
+      const fotoRecortada = recortarImagenCover(img, ancho, altoFoto);
+      doc.addImage(fotoRecortada, "JPEG", margen, y, ancho, altoFoto);
+      y += altoFoto + 8;
+    } catch (err) {
+      // si la foto no se puede leer, seguimos sin ella
+    }
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(26, 26, 26);
+  doc.text(exp.direccion || "", margen, y);
+  y += 7;
+
+  if (piso.precio) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(...VERDE_MARCA);
+    doc.text(formatearImporte(piso.precio), margen, y);
+    y += 7;
+  }
+
+  const datosClave = [];
+  if (piso.superficie) datosClave.push(`${piso.superficie} m²`);
+  if (piso.dormitorios) datosClave.push(`${piso.dormitorios} hab.`);
+  if (piso.banos) datosClave.push(`${piso.banos} baños`);
+  if (piso.planta) datosClave.push(`Planta ${piso.planta}`);
+  datosClave.push(piso.ascensor ? "Con ascensor" : "Sin ascensor");
+  if (piso.terraza) datosClave.push(`Terraza ${piso.terraza} m²`);
+  if (piso.orientacion) datosClave.push(`Orientación ${piso.orientacion}`);
+
+  const extras = [];
+  if (piso.equipado) extras.push("Equipado");
+  if (piso.amueblado) extras.push("Amueblado");
+  if (piso.garaje) extras.push("Garaje");
+  if (piso.trastero) extras.push("Trastero");
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(...GRIS_TEXTO);
+  if (datosClave.length) {
+    const lineas = doc.splitTextToSize(datosClave.join("  ·  "), ancho);
+    doc.text(lineas, margen, y);
+    y += lineas.length * 5 + 2;
+  }
+  if (extras.length) {
+    const lineasExtra = doc.splitTextToSize(extras.join("  ·  "), ancho);
+    doc.text(lineasExtra, margen, y);
+    y += lineasExtra.length * 5 + 2;
+  }
+
+  y += 4;
+  doc.setDrawColor(220, 220, 220);
+  doc.line(margen, y, margen + ancho, y);
+  y += 8;
+
+  const itemsEntorno = ["colegio", "farmacia", "supermercado", "salud", "parque", "deporte"]
+    .map(clave => ({ etiqueta: ENTORNO_ETIQUETAS[clave], ...entorno[clave] }))
+    .filter(item => item.nombre);
+
+  if (itemsEntorno.length) {
+    y = escribirSeccionPDF(doc, "A tu alrededor", margen, y);
+    itemsEntorno.forEach(item => { y = escribirLineaEntornoPDF(doc, item, margen, y, ancho); });
+    y += 4;
+  }
+
+  const itemsTransporte = ["metro", "autobus"]
+    .map(clave => ({ etiqueta: ENTORNO_ETIQUETAS[clave], ...entorno[clave] }))
+    .filter(item => item.nombre);
+
+  if (itemsTransporte.length) {
+    y = escribirSeccionPDF(doc, "Cómo moverte", margen, y);
+    itemsTransporte.forEach(item => { y = escribirLineaEntornoPDF(doc, item, margen, y, ancho); });
+    y += 4;
+  }
+
+  const lineasCostes = [];
+  if (costes.comunidadMensual) lineasCostes.push(`Comunidad: ${formatearImporte(costes.comunidadMensual)}/mes`);
+  if (costes.ibiAnual) lineasCostes.push(`IBI: ${formatearImporte(costes.ibiAnual)}/año`);
+  if (costes.tasaBasurasAnual) lineasCostes.push(`Tasa de basuras: ${formatearImporte(costes.tasaBasurasAnual)}/año`);
+  if (costes.tieneDerramas) {
+    lineasCostes.push(`Derrama activa: ${formatearImporte(costes.derramaImporte)}${costes.derramaDescripcion ? " — " + costes.derramaDescripcion : ""}`);
+  }
+
+  if (lineasCostes.length) {
+    y = escribirSeccionPDF(doc, "Costes", margen, y);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(...GRIS_TEXTO);
+    lineasCostes.forEach(linea => {
+      doc.text(linea, margen, y);
+      y += 5.5;
+    });
+    y += 4;
+  }
+
+  if (entorno.resumen) {
+    y = escribirSeccionPDF(doc, "Resumen", margen, y);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(...GRIS_TEXTO);
+    const lineasResumen = doc.splitTextToSize(entorno.resumen, ancho);
+    doc.text(lineasResumen, margen, y);
+    y += lineasResumen.length * 5.5;
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...VERDE_MARCA);
+  doc.text("+Green +Home", 105, 282, { align: "center" });
+
+  return doc;
+}
+
+function abrirPDFGuardado(dataUriString) {
+  const partes = dataUriString.split(",");
+  const binario = atob(partes[1]);
+  const bytes = new Uint8Array(binario.length);
+  for (let i = 0; i < binario.length; i++) bytes[i] = binario.charCodeAt(i);
+  const blob = new Blob([bytes], { type: "application/pdf" });
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank");
+}
+
+document.getElementById("btn-exportar-memoria").addEventListener("click", async () => {
+  const exp = cargar(STORAGE_EXPEDIENTES).find(x => x.id === expedienteActualId);
+  if (!exp) return;
+
+  const boton = document.getElementById("btn-exportar-memoria");
+  boton.disabled = true;
+  boton.textContent = "Generando...";
+
+  try {
+    const doc = await generarMemoriaPDF(exp);
+    const pdfBase64 = doc.output("datauristring");
+
+    const nuevosExpedientes = cargar(STORAGE_EXPEDIENTES).map(x =>
+      x.id === expedienteActualId
+        ? { ...x, memoriaVisita: { pdfBase64, generadaEl: new Date().toISOString() } }
+        : x
+    );
+
+    try {
+      guardar(STORAGE_EXPEDIENTES, nuevosExpedientes);
+      alert("Memoria generada y guardada.");
+      renderDetalleExpediente();
+    } catch (errorGuardado) {
+      alert("El PDF se generó pero no se pudo guardar: se ha llenado la memoria del navegador. Borra alguna foto o memoria antigua e inténtalo de nuevo.");
+      abrirPDFGuardado(pdfBase64);
+    }
+  } catch (err) {
+    alert("No se pudo generar el PDF. Revisa que todos los datos estén guardados e inténtalo de nuevo.");
+  } finally {
+    boton.disabled = false;
+    boton.textContent = "Exportar memoria (PDF)";
+  }
+});
+
+document.getElementById("btn-abrir-memoria").addEventListener("click", () => {
+  const exp = cargar(STORAGE_EXPEDIENTES).find(x => x.id === expedienteActualId);
+  if (exp && exp.memoriaVisita) abrirPDFGuardado(exp.memoriaVisita.pdfBase64);
 });
 
 /* ============ FINANZAS ============ */

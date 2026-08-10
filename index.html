@@ -320,6 +320,13 @@
 
         <button type="submit" class="btn-primario">Guardar entorno</button>
       </form>
+
+      <div class="detalle-historial-titulo">Memoria de la visita</div>
+      <div id="memoria-estado" class="memoria-estado-texto">Aún no se ha generado</div>
+      <div class="memoria-acciones">
+        <button id="btn-exportar-memoria" class="btn-primario">Exportar memoria (PDF)</button>
+        <button id="btn-abrir-memoria" class="btn-secundario" hidden>Abrir última memoria</button>
+      </div>
     </div>
 
     <!-- ===== VISTA FINANZAS ===== -->
@@ -492,6 +499,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

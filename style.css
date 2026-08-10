@@ -652,6 +652,23 @@ body {
   resize: vertical;
 }
 
+.memoria-estado-texto {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 10px;
+}
+
+.memoria-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.memoria-acciones button {
+  width: 100%;
+}
+
 .entorno-fila {
   display: flex;
   flex-direction: column;
