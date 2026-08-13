@@ -309,6 +309,13 @@ body {
   color: #888;
 }
 
+.lead-seguimiento-fecha {
+  font-size: 12px;
+  color: #888;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
 .lead-badge {
   border: none;
   border-radius: 12px;

@@ -454,6 +454,17 @@ const LEAD_ESTADO_LABEL = {
   descartado: "Descartado"
 };
 
+function proximoSeguimientoDe(lead) {
+  const ultimo = (lead.historial || []).slice().sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
+  return ultimo && ultimo.volverContactar ? ultimo.volverContactar : null;
+}
+
+function formatearFechaCortaMes(fechaStr) {
+  const [anio, mes, dia] = fechaStr.split("-");
+  const nombresCortos = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  return `${Number(dia)} ${nombresCortos[Number(mes) - 1]}`;
+}
+
 function inicial(nombre) {
   return (nombre || "?").trim().charAt(0).toUpperCase();
 }
@@ -493,6 +504,15 @@ function renderLeads() {
       || (l.referencia || "").toLowerCase().includes(texto);
   });
 
+  visibles.sort((a, b) => {
+    const fechaA = proximoSeguimientoDe(a);
+    const fechaB = proximoSeguimientoDe(b);
+    if (fechaA && fechaB) return fechaA.localeCompare(fechaB);
+    if (fechaA) return -1;
+    if (fechaB) return 1;
+    return 0;
+  });
+
   if (visibles.length === 0) {
     contenedor.innerHTML = `<div class="vacio">No hay leads para mostrar</div>`;
     return;
@@ -502,12 +522,14 @@ function renderLeads() {
     const div = document.createElement("div");
     div.className = "lead-card";
     div.setAttribute("data-id", lead.id);
+    const proximaFecha = proximoSeguimientoDe(lead);
     div.innerHTML = `
       <div class="lead-avatar">${inicial(lead.nombre)}</div>
       <div class="lead-info">
         <div class="lead-nombre">${escapeHtml(lead.nombre)}</div>
         <div class="lead-referencia">${escapeHtml(lead.referencia || "")}</div>
         <div class="lead-telefono">${escapeHtml(lead.telefono || "")}</div>
+        ${proximaFecha ? `<div class="lead-seguimiento-fecha">Seguimiento: ${formatearFechaCortaMes(proximaFecha)}</div>` : ""}
       </div>
       <button class="lead-badge ${lead.estado}" data-id="${lead.id}">${LEAD_ESTADO_LABEL[lead.estado]}</button>
     `;
