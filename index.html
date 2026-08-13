@@ -27,6 +27,10 @@
 
       <div class="dash-resumen" id="dash-resumen"></div>
 
+      <div id="dash-alerta-ayer" class="dash-alerta-ayer" hidden>
+        <!-- Se genera con JavaScript -->
+      </div>
+
       <div class="dash-seccion-titulo">Prioridades para hoy</div>
       <div id="dash-prioridades" class="dash-lista">
         <!-- Se genera con JavaScript -->
@@ -68,11 +72,29 @@
         <div class="tabs">
           <button class="tab active" data-view="dia">Día</button>
           <button class="tab" data-view="semana">Semana</button>
+          <button class="tab" data-view="mes">Mes</button>
         </div>
       </div>
 
       <div id="lista-citas" class="lista-citas">
         <!-- Las citas se generan aquí con JavaScript -->
+      </div>
+
+      <div id="agenda-mensual" class="agenda-mensual" hidden>
+        <div class="mes-nav">
+          <button type="button" id="btn-mes-anterior" class="btn-editar">‹</button>
+          <div id="mes-titulo" class="mes-titulo"></div>
+          <button type="button" id="btn-mes-siguiente" class="btn-editar">›</button>
+        </div>
+        <div class="mes-dias-semana">
+          <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
+        </div>
+        <div id="mes-grid" class="mes-grid">
+          <!-- La cuadrícula se genera aquí con JavaScript -->
+        </div>
+        <div id="mes-detalle-dia" class="lista-citas">
+          <!-- Las citas del día seleccionado se generan aquí con JavaScript -->
+        </div>
       </div>
 
       <button id="btn-add-cita" class="btn-add">+</button>
@@ -328,6 +350,11 @@
         <button type="submit" class="btn-primario">Guardar entorno</button>
       </form>
 
+      <div class="detalle-historial-titulo">Historial</div>
+      <div id="det-exp-historial" class="detalle-historial">
+        <!-- El historial se genera aquí con JavaScript -->
+      </div>
+
       <div class="detalle-historial-titulo">Memoria de la visita</div>
       <div id="memoria-estado" class="memoria-estado-texto">Aún no se ha generado</div>
       <div class="memoria-acciones">
@@ -395,10 +422,10 @@
 <!-- ===== MODAL NUEVA CITA ===== -->
 <div id="modal-cita" class="modal-overlay">
   <div class="modal">
-    <h2 id="modal-cita-titulo">Nueva cita o acción</h2>
+    <h2 id="modal-cita-titulo">Nueva visita</h2>
     <form id="form-cita">
-      <label>Cliente / Título / Acción
-        <input type="text" id="input-titulo" required placeholder="Ej: Llamar a Tania para confirmar cita">
+      <label>Cliente / Título
+        <input type="text" id="input-titulo" required placeholder="Ej: Visita con Marta López">
       </label>
       <label>Dirección
         <input type="text" id="input-direccion" placeholder="Ej: Calle Oviedo 11, 2ºB">
@@ -406,15 +433,60 @@
       <label>Fecha
         <input type="date" id="input-fecha" required>
       </label>
-      <label>Hora (déjala vacía si es solo una acción/tarea)
-        <input type="time" id="input-hora">
+      <label>Hora
+        <input type="time" id="input-hora" required>
       </label>
       <label>Teléfono
         <input type="tel" id="input-telefono" placeholder="Ej: 612 345 678">
       </label>
+      <label>Lead relacionado (opcional)
+        <select id="input-lead-relacionado">
+          <option value="">Sin vincular</option>
+        </select>
+      </label>
+      <label>Expediente relacionado (opcional)
+        <select id="input-expediente-relacionado">
+          <option value="">Sin vincular</option>
+        </select>
+      </label>
       <div class="modal-actions">
         <button type="button" class="btn-secundario" data-cerrar="modal-cita">Cancelar</button>
         <button type="submit" class="btn-primario">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== MODAL REGISTRO DE VISITA COMPLETADA ===== -->
+<div id="modal-registro-visita" class="modal-overlay">
+  <div class="modal">
+    <h2>Registrar visita</h2>
+    <form id="form-registro-visita">
+      <label>¿Se presentó el cliente?
+        <select id="registro-presento" required>
+          <option value="si">Sí</option>
+          <option value="no">No</option>
+        </select>
+      </label>
+      <label>¿Mostró interés?
+        <select id="registro-interes" required>
+          <option value="si">Sí</option>
+          <option value="no">No</option>
+          <option value="duda">Duda</option>
+        </select>
+      </label>
+      <label>Observaciones
+        <textarea id="registro-observaciones" rows="3" placeholder="Notas de la visita..."></textarea>
+      </label>
+      <label>Próxima acción de seguimiento (texto)
+        <input type="text" id="registro-proxima-texto" placeholder="Ej: Llamar para saber si decide">
+      </label>
+      <label>Fecha de la próxima acción
+        <input type="date" id="registro-proxima-fecha">
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn-secundario" data-cerrar="modal-registro-visita">Cancelar</button>
+        <button type="submit" class="btn-primario">Guardar registro</button>
       </div>
     </form>
   </div>

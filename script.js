@@ -48,11 +48,19 @@ document.querySelectorAll(".modal-overlay").forEach(overlay => {
 
 /* ============ NAVEGACIÓN ENTRE PANTALLAS ============ */
 
+const RENDER_POR_PAGINA = {
+  home: () => renderDashboard(),
+  agenda: () => renderAgenda(),
+  leads: () => renderLeads(),
+  expedientes: () => renderExpedientes(),
+  finanzas: () => renderFinanzas()
+};
+
 document.querySelectorAll(".nav-item").forEach(btn => {
   btn.addEventListener("click", () => {
     if (btn.disabled) return;
     const pagina = btn.getAttribute("data-page");
-    if (pagina === "home") renderDashboard();
+    if (RENDER_POR_PAGINA[pagina]) RENDER_POR_PAGINA[pagina]();
     mostrarVista(`view-${pagina}`, pagina);
   });
 });
@@ -60,14 +68,22 @@ document.querySelectorAll(".nav-item").forEach(btn => {
 /* ============ AGENDA ============ */
 
 const STORAGE_CITAS = "greenhome_citas";
-let vista = "dia"; // "dia" o "semana"
+let vista = "dia"; // "dia" | "semana" | "mes"
+let mesActual = new Date().getMonth();
+let anioActual = new Date().getFullYear();
+let diaSeleccionadoMes = null;
 
-const ESTADOS_CITA = ["pendiente", "confirmada", "cancelada"];
+const ESTADOS_CITA = ["pendiente", "completada", "cancelada"];
 const ESTADO_CITA_LABEL = {
   pendiente: "Pendiente",
-  confirmada: "Confirmada",
+  completada: "Completada",
   cancelada: "Cancelada"
 };
+
+function estadoCitaNormalizado(cita) {
+  const estado = cita.estado || "pendiente";
+  return estado === "confirmada" ? "completada" : estado;
+}
 
 function formatearEtiquetaFecha(fechaStr) {
   const hoy = new Date();
@@ -95,11 +111,70 @@ function citasVisibles(citas) {
   });
 }
 
+function renderCitaEnLista(cita, contenedorPadre) {
+  const estado = estadoCitaNormalizado(cita);
+  const citaDiv = document.createElement("div");
+  citaDiv.className = `cita estado-${estado}`;
+  citaDiv.setAttribute("data-id", cita.id);
+  const detalles = [cita.direccion, cita.telefono].filter(Boolean).join(" · ");
+  citaDiv.innerHTML = `
+    <div class="cita-hora">${cita.hora || ""}</div>
+    <div class="cita-info">
+      <div class="cita-titulo">${escapeHtml(cita.titulo)}</div>
+      <div class="cita-direccion">${escapeHtml(detalles)}</div>
+    </div>
+    <button class="estado-pill estado-${estado}" data-id="${cita.id}">${ESTADO_CITA_LABEL[estado]}</button>
+    <button class="cita-borrar" data-id="${cita.id}">✕</button>
+  `;
+  citaDiv.addEventListener("click", () => abrirEditarCita(cita.id));
+  contenedorPadre.appendChild(citaDiv);
+}
+
+function activarBotonesCita(contenedor, alTerminar) {
+  contenedor.querySelectorAll(".cita-borrar").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const id = btn.getAttribute("data-id");
+      guardar(STORAGE_CITAS, cargar(STORAGE_CITAS).filter(c => c.id !== id));
+      alTerminar();
+    });
+  });
+
+  contenedor.querySelectorAll(".estado-pill").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const id = btn.getAttribute("data-id");
+      const cita = cargar(STORAGE_CITAS).find(c => c.id === id);
+      if (!cita) return;
+      const actual = estadoCitaNormalizado(cita);
+      if (actual === "pendiente") {
+        abrirRegistroVisita(id);
+        return;
+      }
+      const siguiente = ESTADOS_CITA[(ESTADOS_CITA.indexOf(actual) + 1) % ESTADOS_CITA.length];
+      guardar(STORAGE_CITAS, cargar(STORAGE_CITAS).map(c => c.id === id ? { ...c, estado: siguiente } : c));
+      alTerminar();
+    });
+  });
+}
+
 function renderAgenda() {
-  const contenedor = document.getElementById("lista-citas");
+  const listaCitas = document.getElementById("lista-citas");
+  const mensual = document.getElementById("agenda-mensual");
+
+  if (vista === "mes") {
+    listaCitas.hidden = true;
+    mensual.hidden = false;
+    renderAgendaMensual();
+    return;
+  }
+  listaCitas.hidden = false;
+  mensual.hidden = true;
+
+  const contenedor = listaCitas;
   const citas = cargar(STORAGE_CITAS);
   const visibles = citasVisibles(citas).sort((a, b) =>
-    (a.fecha + a.hora).localeCompare(b.fecha + b.hora)
+    (a.fecha + (a.hora || "")).localeCompare(b.fecha + (b.hora || ""))
   );
 
   contenedor.innerHTML = "";
@@ -124,54 +199,86 @@ function renderAgenda() {
     titulo.textContent = formatearEtiquetaFecha(fecha);
     grupoDiv.appendChild(titulo);
 
-    grupos[fecha].forEach(cita => {
-      const estado = cita.estado || "pendiente";
-      const citaDiv = document.createElement("div");
-      citaDiv.className = `cita estado-${estado}`;
-      citaDiv.setAttribute("data-id", cita.id);
-      const detalles = [cita.direccion, cita.telefono].filter(Boolean).join(" · ");
-      citaDiv.innerHTML = `
-        <div class="cita-hora ${cita.hora ? "" : "cita-hora-accion"}">${cita.hora || "Acción"}</div>
-        <div class="cita-info">
-          <div class="cita-titulo">${escapeHtml(cita.titulo)}</div>
-          <div class="cita-direccion">${escapeHtml(detalles)}</div>
-        </div>
-        <button class="estado-pill estado-${estado}" data-id="${cita.id}">${ESTADO_CITA_LABEL[estado]}</button>
-        <button class="cita-borrar" data-id="${cita.id}">✕</button>
-      `;
-      grupoDiv.appendChild(citaDiv);
-    });
+    grupos[fecha].forEach(cita => renderCitaEnLista(cita, grupoDiv));
 
     contenedor.appendChild(grupoDiv);
   });
 
-  contenedor.querySelectorAll(".cita").forEach(div => {
-    div.addEventListener("click", () => abrirEditarCita(div.getAttribute("data-id")));
-  });
-
-  contenedor.querySelectorAll(".cita-borrar").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const id = btn.getAttribute("data-id");
-      guardar(STORAGE_CITAS, cargar(STORAGE_CITAS).filter(c => c.id !== id));
-      renderAgenda();
-    });
-  });
-
-  contenedor.querySelectorAll(".estado-pill").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const id = btn.getAttribute("data-id");
-      const nuevasCitas = cargar(STORAGE_CITAS).map(c => {
-        if (c.id !== id) return c;
-        const actual = ESTADOS_CITA.indexOf(c.estado || "pendiente");
-        return { ...c, estado: ESTADOS_CITA[(actual + 1) % ESTADOS_CITA.length] };
-      });
-      guardar(STORAGE_CITAS, nuevasCitas);
-      renderAgenda();
-    });
-  });
+  activarBotonesCita(contenedor, renderAgenda);
 }
+
+function renderAgendaMensual() {
+  document.getElementById("mes-titulo").textContent = `${MESES[mesActual]} ${anioActual}`;
+
+  const citas = cargar(STORAGE_CITAS);
+  const hoyStr = new Date().toISOString().slice(0, 10);
+
+  const primerDiaMes = new Date(anioActual, mesActual, 1);
+  const diasEnMes = new Date(anioActual, mesActual + 1, 0).getDate();
+  let diaSemanaInicio = primerDiaMes.getDay();
+  diaSemanaInicio = diaSemanaInicio === 0 ? 6 : diaSemanaInicio - 1;
+
+  const grid = document.getElementById("mes-grid");
+  grid.innerHTML = "";
+
+  for (let i = 0; i < diaSemanaInicio; i++) {
+    const vacio = document.createElement("div");
+    vacio.className = "mes-dia vacio";
+    grid.appendChild(vacio);
+  }
+
+  for (let dia = 1; dia <= diasEnMes; dia++) {
+    const fechaStr = `${anioActual}-${String(mesActual + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+    const citasDelDia = citas.filter(c => c.fecha === fechaStr);
+
+    let clase = "mes-dia";
+    if (citasDelDia.length > 0) {
+      const hayPendiente = citasDelDia.some(c => estadoCitaNormalizado(c) === "pendiente");
+      clase += hayPendiente ? " pendiente-alerta" : " completado";
+    }
+    if (fechaStr === hoyStr) clase += " hoy";
+    if (fechaStr === diaSeleccionadoMes) clase += " seleccionado";
+
+    const celda = document.createElement("div");
+    celda.className = clase;
+    celda.textContent = dia;
+    celda.addEventListener("click", () => {
+      diaSeleccionadoMes = fechaStr;
+      renderAgendaMensual();
+    });
+    grid.appendChild(celda);
+  }
+
+  const contDetalle = document.getElementById("mes-detalle-dia");
+  contDetalle.innerHTML = "";
+  if (!diaSeleccionadoMes) return;
+
+  const citasDia = citas
+    .filter(c => c.fecha === diaSeleccionadoMes)
+    .sort((a, b) => (a.hora || "").localeCompare(b.hora || ""));
+
+  if (citasDia.length === 0) {
+    contDetalle.innerHTML = `<div class="vacio">Sin citas ese día</div>`;
+    return;
+  }
+
+  citasDia.forEach(cita => renderCitaEnLista(cita, contDetalle));
+  activarBotonesCita(contDetalle, renderAgendaMensual);
+}
+
+document.getElementById("btn-mes-anterior").addEventListener("click", () => {
+  mesActual--;
+  if (mesActual < 0) { mesActual = 11; anioActual--; }
+  diaSeleccionadoMes = null;
+  renderAgendaMensual();
+});
+
+document.getElementById("btn-mes-siguiente").addEventListener("click", () => {
+  mesActual++;
+  if (mesActual > 11) { mesActual = 0; anioActual++; }
+  diaSeleccionadoMes = null;
+  renderAgendaMensual();
+});
 
 document.querySelectorAll(".tab").forEach(tab => {
   tab.addEventListener("click", () => {
@@ -182,13 +289,26 @@ document.querySelectorAll(".tab").forEach(tab => {
   });
 });
 
+function poblarSelectoresRelacion() {
+  const selectLead = document.getElementById("input-lead-relacionado");
+  const selectExp = document.getElementById("input-expediente-relacionado");
+  const leads = cargar(STORAGE_LEADS);
+  const expedientes = cargar(STORAGE_EXPEDIENTES);
+
+  selectLead.innerHTML = '<option value="">Sin vincular</option>' +
+    leads.map(l => `<option value="${l.id}">${escapeHtml(l.nombre)}</option>`).join("");
+  selectExp.innerHTML = '<option value="">Sin vincular</option>' +
+    expedientes.map(x => `<option value="${x.id}">${escapeHtml(x.direccion)}</option>`).join("");
+}
+
 let citaEditandoId = null;
 
 document.getElementById("btn-add-cita").addEventListener("click", () => {
   citaEditandoId = null;
-  document.getElementById("modal-cita-titulo").textContent = "Nueva cita o acción";
+  document.getElementById("modal-cita-titulo").textContent = "Nueva visita";
   document.getElementById("form-cita").reset();
   document.getElementById("input-fecha").value = new Date().toISOString().slice(0, 10);
+  poblarSelectoresRelacion();
   abrirModal("modal-cita");
 });
 
@@ -196,12 +316,15 @@ function abrirEditarCita(id) {
   const cita = cargar(STORAGE_CITAS).find(c => c.id === id);
   if (!cita) return;
   citaEditandoId = cita.id;
-  document.getElementById("modal-cita-titulo").textContent = "Editar cita o acción";
+  document.getElementById("modal-cita-titulo").textContent = "Editar visita";
   document.getElementById("input-titulo").value = cita.titulo;
   document.getElementById("input-direccion").value = cita.direccion || "";
   document.getElementById("input-fecha").value = cita.fecha;
   document.getElementById("input-hora").value = cita.hora || "";
   document.getElementById("input-telefono").value = cita.telefono || "";
+  poblarSelectoresRelacion();
+  document.getElementById("input-lead-relacionado").value = cita.leadId || "";
+  document.getElementById("input-expediente-relacionado").value = cita.expedienteId || "";
   abrirModal("modal-cita");
 }
 
@@ -213,7 +336,9 @@ document.getElementById("form-cita").addEventListener("submit", (e) => {
     direccion: document.getElementById("input-direccion").value.trim(),
     fecha: document.getElementById("input-fecha").value,
     hora: document.getElementById("input-hora").value,
-    telefono: document.getElementById("input-telefono").value.trim()
+    telefono: document.getElementById("input-telefono").value.trim(),
+    leadId: document.getElementById("input-lead-relacionado").value || null,
+    expedienteId: document.getElementById("input-expediente-relacionado").value || null
   };
 
   const citas = cargar(STORAGE_CITAS);
@@ -229,6 +354,89 @@ document.getElementById("form-cita").addEventListener("submit", (e) => {
   renderAgenda();
 });
 
+/* ============ REGISTRO DE VISITA COMPLETADA ============ */
+
+let citaParaRegistrar = null;
+
+function abrirRegistroVisita(citaId) {
+  citaParaRegistrar = citaId;
+  document.getElementById("form-registro-visita").reset();
+  abrirModal("modal-registro-visita");
+}
+
+document.getElementById("form-registro-visita").addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  const sePresento = document.getElementById("registro-presento").value;
+  const interes = document.getElementById("registro-interes").value;
+  const observaciones = document.getElementById("registro-observaciones").value.trim();
+  const proximaTexto = document.getElementById("registro-proxima-texto").value.trim();
+  const proximaFecha = document.getElementById("registro-proxima-fecha").value;
+
+  const citas = cargar(STORAGE_CITAS);
+  const cita = citas.find(c => c.id === citaParaRegistrar);
+  if (!cita) { cerrarModal("modal-registro-visita"); return; }
+
+  const hoyStr = new Date().toISOString().slice(0, 10);
+  const registro = {
+    sePresento,
+    interes,
+    observaciones,
+    proximaAccion: { texto: proximaTexto, fecha: proximaFecha || null },
+    fecha: hoyStr
+  };
+
+  guardar(STORAGE_CITAS, citas.map(c =>
+    c.id === citaParaRegistrar ? { ...c, estado: "completada", registroVisita: registro } : c
+  ));
+
+  const etiquetaInteres = interes === "si" ? "Sí" : interes === "no" ? "No" : "Duda";
+  const resumenTexto = `Visita ${formatearFechaCorta(cita.fecha)}${cita.hora ? " " + cita.hora : ""} — ` +
+    `Se presentó: ${sePresento === "si" ? "Sí" : "No"}. Interés: ${etiquetaInteres}.` +
+    (observaciones ? ` ${observaciones}` : "");
+
+  const entradaHistorial = {
+    id: Date.now().toString(),
+    fecha: hoyStr,
+    texto: resumenTexto,
+    volverContactar: proximaFecha || null
+  };
+
+  if (cita.leadId) {
+    const leads = cargar(STORAGE_LEADS);
+    guardar(STORAGE_LEADS, leads.map(l =>
+      l.id === cita.leadId ? { ...l, historial: [...(l.historial || []), entradaHistorial] } : l
+    ));
+  } else if (interes === "si" && proximaTexto) {
+    const leads = cargar(STORAGE_LEADS);
+    leads.push({
+      id: Date.now().toString() + "l",
+      nombre: cita.titulo,
+      referencia: cita.direccion || "",
+      telefono: cita.telefono || "",
+      estado: "seguimiento",
+      historial: [{
+        id: Date.now().toString(),
+        fecha: hoyStr,
+        texto: `Creado automáticamente tras la visita. ${proximaTexto}`,
+        volverContactar: proximaFecha || null
+      }]
+    });
+    guardar(STORAGE_LEADS, leads);
+  }
+
+  if (cita.expedienteId) {
+    const expedientes = cargar(STORAGE_EXPEDIENTES);
+    guardar(STORAGE_EXPEDIENTES, expedientes.map(x =>
+      x.id === cita.expedienteId ? { ...x, historial: [...(x.historial || []), entradaHistorial] } : x
+    ));
+  }
+
+  cerrarModal("modal-registro-visita");
+  citaParaRegistrar = null;
+  renderAgenda();
+  renderDashboard();
+});
 /* ============ LEADS ============ */
 
 const STORAGE_LEADS = "greenhome_leads";
@@ -526,6 +734,10 @@ function entornoDe(exp) {
   return vacio;
 }
 
+function historialExpedienteDe(exp) {
+  return exp.historial || [];
+}
+
 function renderFiltrosExpedientes(expedientes) {
   const contenedor = document.getElementById("filtros-expedientes");
   contenedor.innerHTML = "";
@@ -752,6 +964,24 @@ function renderDetalleExpediente() {
     document.getElementById(`entorno-${clave}-minutos`).value = item.minutos || "";
   });
   document.getElementById("entorno-resumen").value = entorno.resumen || "";
+
+  const historialExp = historialExpedienteDe(exp).slice().sort((a, b) => b.fecha.localeCompare(a.fecha));
+  const contHistorialExp = document.getElementById("det-exp-historial");
+  contHistorialExp.innerHTML = "";
+  if (historialExp.length === 0) {
+    contHistorialExp.innerHTML = `<div class="vacio">Sin historial todavía</div>`;
+  } else {
+    historialExp.forEach(obs => {
+      const div = document.createElement("div");
+      div.className = "observacion";
+      div.innerHTML = `
+        <div class="observacion-fecha">${formatearFechaCorta(obs.fecha)}</div>
+        <div class="observacion-texto">${escapeHtml(obs.texto)}</div>
+        ${obs.volverContactar ? `<div class="observacion-seguimiento">Volver a contactar: ${formatearFechaCorta(obs.volverContactar)}</div>` : ""}
+      `;
+      contHistorialExp.appendChild(div);
+    });
+  }
 
   const memoriaEstado = document.getElementById("memoria-estado");
   const btnAbrirMemoria = document.getElementById("btn-abrir-memoria");
@@ -1111,20 +1341,17 @@ async function generarMemoriaPDF(exp) {
     y += lineasResumen.length * 5.5;
   }
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10.5);
-  doc.setTextColor(...VERDE_MARCA);
-  doc.text("+Green +Home", margen, 282);
+  const centroX = 210 / 2;
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9.5);
+  doc.setFontSize(10);
   doc.setTextColor(26, 26, 26);
-  doc.text(NOMBRE_AGENTE, margen + ancho, 279, { align: "right" });
+  doc.text(NOMBRE_AGENTE, centroX, 281, { align: "center" });
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(140, 140, 140);
-  doc.text(TELEFONO_AGENTE, margen + ancho, 284, { align: "right" });
+  doc.text(TELEFONO_AGENTE, centroX, 286, { align: "center" });
 
   return doc;
 }
@@ -1321,58 +1548,96 @@ const DIAS_SEMANA = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Vier
 function renderDashboard() {
   const hoy = new Date();
   const hoyStr = hoy.toISOString().slice(0, 10);
+  const ayer = new Date(hoy);
+  ayer.setDate(ayer.getDate() - 1);
+  const ayerStr = ayer.toISOString().slice(0, 10);
+
   document.getElementById("dash-fecha").textContent =
     `${DIAS_SEMANA[hoy.getDay()]}, ${hoy.getDate()} de ${MESES[hoy.getMonth()]}`;
 
   const citas = cargar(STORAGE_CITAS);
-  const citasHoy = citas.filter(c => c.fecha === hoyStr).sort((a, b) => a.hora.localeCompare(b.hora));
-
   const leads = cargar(STORAGE_LEADS);
   const expedientes = cargar(STORAGE_EXPEDIENTES);
 
-  const leadsVencidos = leads.filter(l => {
+  const citasHoy = citas.filter(c => c.fecha === hoyStr).sort((a, b) => (a.hora || "").localeCompare(b.hora || ""));
+  const citasAyerPendientes = citas.filter(c => c.fecha === ayerStr && estadoCitaNormalizado(c) === "pendiente");
+
+  const leadsSeguimientoHoy = leads.filter(l => {
     const ultimo = (l.historial || []).slice().sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
     return ultimo && ultimo.volverContactar && ultimo.volverContactar <= hoyStr;
   });
 
-  const itemsPendientes = [];
-  expedientes.filter(x => x.estado === "en_curso").forEach(x => {
-    checklistDe(x).filter(c => !c.hecho).forEach(c => itemsPendientes.push({ expediente: x, item: c }));
-  });
+  document.getElementById("dash-resumen").textContent =
+    `${citasHoy.length} visita${citasHoy.length === 1 ? "" : "s"} · ` +
+    `${leadsSeguimientoHoy.length} seguimiento${leadsSeguimientoHoy.length === 1 ? "" : "s"} · ` +
+    `${citasAyerPendientes.length} pendiente${citasAyerPendientes.length === 1 ? "" : "s"} de ayer`;
+
+  const contAlertaAyer = document.getElementById("dash-alerta-ayer");
+  contAlertaAyer.innerHTML = "";
+  if (citasAyerPendientes.length > 0) {
+    contAlertaAyer.hidden = false;
+    citasAyerPendientes.forEach(cita => {
+      const item = document.createElement("div");
+      item.className = "dash-alerta-ayer-item";
+      item.innerHTML = `
+        <div class="dash-alerta-ayer-texto">Ayer: ${escapeHtml(cita.titulo)} — sin resolver</div>
+        <div class="dash-alerta-ayer-acciones">
+          <button class="reagendar" data-id="${cita.id}">Reagendar</button>
+          <button class="cancelar" data-id="${cita.id}">Cancelar</button>
+          <button class="hecho" data-id="${cita.id}">Marcar como hecho</button>
+        </div>
+      `;
+      contAlertaAyer.appendChild(item);
+    });
+
+    contAlertaAyer.querySelectorAll(".reagendar").forEach(btn => {
+      btn.addEventListener("click", () => abrirEditarCita(btn.getAttribute("data-id")));
+    });
+    contAlertaAyer.querySelectorAll(".cancelar").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-id");
+        guardar(STORAGE_CITAS, cargar(STORAGE_CITAS).map(c => c.id === id ? { ...c, estado: "cancelada" } : c));
+        renderDashboard();
+      });
+    });
+    contAlertaAyer.querySelectorAll(".hecho").forEach(btn => {
+      btn.addEventListener("click", () => abrirRegistroVisita(btn.getAttribute("data-id")));
+    });
+  } else {
+    contAlertaAyer.hidden = true;
+  }
 
   const prioridades = [];
+  const hayActividadHoy = citasHoy.length > 0 || leadsSeguimientoHoy.length > 0;
 
-  leadsVencidos.forEach(l => {
-    prioridades.push({
-      urgente: true,
-      texto: `Llamar a ${l.nombre} — seguimiento vencido`,
-      accion: () => abrirDetalleLead(l.id)
+  if (hayActividadHoy) {
+    citasHoy.forEach(c => {
+      prioridades.push({
+        urgente: false,
+        texto: `Visita ${c.hora} — ${c.titulo}${c.direccion ? " · " + c.direccion : ""}`,
+        accion: () => mostrarVista("view-agenda", "agenda")
+      });
     });
-  });
-
-  itemsPendientes.slice(0, 3).forEach(({ expediente, item }) => {
-    prioridades.push({
-      urgente: false,
-      texto: `Solicitar ${item.nombre} — ${expediente.direccion}`,
-      accion: () => abrirDetalleExpediente(expediente.id)
+    leadsSeguimientoHoy.forEach(l => {
+      prioridades.push({
+        urgente: true,
+        texto: `Seguimiento: ${l.nombre}`,
+        accion: () => abrirDetalleLead(l.id)
+      });
     });
-  });
-
-  citasHoy.forEach(c => {
-    prioridades.push({
-      urgente: false,
-      texto: c.hora
-        ? `Cita ${c.hora} — ${c.titulo}${c.direccion ? " · " + c.direccion : ""}`
-        : `Acción — ${c.titulo}`,
-      accion: () => mostrarVista("view-agenda", "agenda")
+  } else {
+    const itemsPendientes = [];
+    expedientes.filter(x => x.estado === "en_curso").forEach(x => {
+      checklistDe(x).filter(c => !c.hecho).forEach(c => itemsPendientes.push({ expediente: x, item: c }));
     });
-  });
-
-  const partes = [];
-  if (citasHoy.length) partes.push(`hoy tienes ${citasHoy.length} cita${citasHoy.length === 1 ? "" : "s"}`);
-  if (leadsVencidos.length) partes.push(`${leadsVencidos.length} seguimiento${leadsVencidos.length === 1 ? "" : "s"} vencido${leadsVencidos.length === 1 ? "" : "s"}`);
-  document.getElementById("dash-resumen").textContent =
-    partes.length ? partes.join(" y ") + "." : "Sin pendientes urgentes por ahora.";
+    itemsPendientes.slice(0, 5).forEach(({ expediente, item }) => {
+      prioridades.push({
+        urgente: false,
+        texto: `Solicitar ${item.nombre} — ${expediente.direccion}`,
+        accion: () => abrirDetalleExpediente(expediente.id)
+      });
+    });
+  }
 
   const contPrior = document.getElementById("dash-prioridades");
   contPrior.innerHTML = "";
@@ -1433,7 +1698,6 @@ function renderDashboard() {
     });
   }
 }
-
 /* ============ COPIA DE SEGURIDAD ============ */
 
 const CLAVES_DATOS = [STORAGE_CITAS, STORAGE_LEADS, STORAGE_EXPEDIENTES, STORAGE_FINANZAS];
