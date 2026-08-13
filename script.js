@@ -456,7 +456,8 @@ const LEAD_ESTADO_LABEL = {
 
 function proximoSeguimientoDe(lead) {
   const ultimo = (lead.historial || []).slice().sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
-  return ultimo && ultimo.volverContactar ? ultimo.volverContactar : null;
+  if (!ultimo || !ultimo.volverContactar) return null;
+  return { fecha: ultimo.volverContactar, hora: ultimo.volverContactarHora || null };
 }
 
 function formatearFechaCortaMes(fechaStr) {
@@ -505,11 +506,11 @@ function renderLeads() {
   });
 
   visibles.sort((a, b) => {
-    const fechaA = proximoSeguimientoDe(a);
-    const fechaB = proximoSeguimientoDe(b);
-    if (fechaA && fechaB) return fechaA.localeCompare(fechaB);
-    if (fechaA) return -1;
-    if (fechaB) return 1;
+    const segA = proximoSeguimientoDe(a);
+    const segB = proximoSeguimientoDe(b);
+    if (segA && segB) return segA.fecha.localeCompare(segB.fecha);
+    if (segA) return -1;
+    if (segB) return 1;
     return 0;
   });
 
@@ -522,16 +523,18 @@ function renderLeads() {
     const div = document.createElement("div");
     div.className = "lead-card";
     div.setAttribute("data-id", lead.id);
-    const proximaFecha = proximoSeguimientoDe(lead);
+    const seguimiento = proximoSeguimientoDe(lead);
     div.innerHTML = `
       <div class="lead-avatar">${inicial(lead.nombre)}</div>
       <div class="lead-info">
         <div class="lead-nombre">${escapeHtml(lead.nombre)}</div>
         <div class="lead-referencia">${escapeHtml(lead.referencia || "")}</div>
         <div class="lead-telefono">${escapeHtml(lead.telefono || "")}</div>
-        ${proximaFecha ? `<div class="lead-seguimiento-fecha">Seguimiento: ${formatearFechaCortaMes(proximaFecha)}</div>` : ""}
       </div>
-      <button class="lead-badge ${lead.estado}" data-id="${lead.id}">${LEAD_ESTADO_LABEL[lead.estado]}</button>
+      <div class="lead-badge-col">
+        <button class="lead-badge ${lead.estado}" data-id="${lead.id}">${LEAD_ESTADO_LABEL[lead.estado]}</button>
+        ${seguimiento ? `<div class="lead-badge-fecha">${formatearFechaCortaMes(seguimiento.fecha)}${seguimiento.hora ? " · " + seguimiento.hora : ""}</div>` : ""}
+      </div>
     `;
     contenedor.appendChild(div);
   });
@@ -1657,7 +1660,12 @@ function renderDashboard() {
     });
 
     itemsHoy
-      .sort((a, b) => (a.hora || "99:99").localeCompare(b.hora || "99:99"))
+      .sort((a, b) => {
+        const horaA = a.hora || "99:99";
+        const horaB = b.hora || "99:99";
+        if (horaA !== horaB) return horaA.localeCompare(horaB);
+        return (b.urgente ? 1 : 0) - (a.urgente ? 1 : 0);
+      })
       .forEach(item => prioridades.push(item));
   } else {
     const itemsPendientes = [];

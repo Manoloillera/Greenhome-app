@@ -309,11 +309,18 @@ body {
   color: #888;
 }
 
-.lead-seguimiento-fecha {
-  font-size: 12px;
+.lead-badge-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.lead-badge-fecha {
+  font-size: 10px;
   color: #888;
   font-weight: 600;
-  margin-top: 2px;
 }
 
 .lead-badge {
