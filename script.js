@@ -1615,20 +1615,28 @@ function renderDashboard() {
   const hayActividadHoy = citasHoy.length > 0 || leadsSeguimientoHoy.length > 0;
 
   if (hayActividadHoy) {
+    const itemsHoy = [];
+
     citasHoy.forEach(c => {
-      prioridades.push({
+      itemsHoy.push({
+        hora: c.hora || "",
         urgente: false,
         texto: `Visita ${c.hora} — ${c.titulo}${c.direccion ? " · " + c.direccion : ""}`,
         accion: () => mostrarVista("view-agenda", "agenda")
       });
     });
     leadsSeguimientoHoy.forEach(({ lead: l, ultimo }) => {
-      prioridades.push({
+      itemsHoy.push({
+        hora: ultimo.volverContactarHora || "",
         urgente: true,
         texto: `Seguimiento: ${l.nombre}${ultimo.volverContactarHora ? " — " + ultimo.volverContactarHora : ""}`,
         accion: () => abrirDetalleLead(l.id)
       });
     });
+
+    itemsHoy
+      .sort((a, b) => (a.hora || "99:99").localeCompare(b.hora || "99:99"))
+      .forEach(item => prioridades.push(item));
   } else {
     const itemsPendientes = [];
     expedientes.filter(x => x.estado === "en_curso").forEach(x => {
