@@ -90,6 +90,10 @@ body {
   gap: 16px;
 }
 
+.lista-citas[hidden] {
+  display: none;
+}
+
 .grupo-fecha {
   display: flex;
   flex-direction: column;
@@ -484,6 +488,10 @@ body {
   flex-direction: column;
   max-height: 65vh;
   overflow-y: auto;
+}
+
+.agenda-mensual[hidden] {
+  display: none;
 }
 
 .mes-nav {
