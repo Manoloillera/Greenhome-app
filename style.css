@@ -521,6 +521,7 @@ body {
 .mes-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 24px;
   gap: 2px;
   margin-bottom: 10px;
   flex-shrink: 0;
