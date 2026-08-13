@@ -372,6 +372,7 @@ document.getElementById("form-registro-visita").addEventListener("submit", (e) =
   const observaciones = document.getElementById("registro-observaciones").value.trim();
   const proximaTexto = document.getElementById("registro-proxima-texto").value.trim();
   const proximaFecha = document.getElementById("registro-proxima-fecha").value;
+  const proximaHora = document.getElementById("registro-proxima-hora").value;
 
   const citas = cargar(STORAGE_CITAS);
   const cita = citas.find(c => c.id === citaParaRegistrar);
@@ -382,7 +383,7 @@ document.getElementById("form-registro-visita").addEventListener("submit", (e) =
     sePresento,
     interes,
     observaciones,
-    proximaAccion: { texto: proximaTexto, fecha: proximaFecha || null },
+    proximaAccion: { texto: proximaTexto, fecha: proximaFecha || null, hora: proximaHora || null },
     fecha: hoyStr
   };
 
@@ -399,7 +400,8 @@ document.getElementById("form-registro-visita").addEventListener("submit", (e) =
     id: Date.now().toString(),
     fecha: hoyStr,
     texto: resumenTexto,
-    volverContactar: proximaFecha || null
+    volverContactar: proximaFecha || null,
+    volverContactarHora: proximaHora || null
   };
 
   if (cita.leadId) {
@@ -419,7 +421,8 @@ document.getElementById("form-registro-visita").addEventListener("submit", (e) =
         id: Date.now().toString(),
         fecha: hoyStr,
         texto: `Creado automáticamente tras la visita. ${proximaTexto}`,
-        volverContactar: proximaFecha || null
+        volverContactar: proximaFecha || null,
+        volverContactarHora: proximaHora || null
       }]
     });
     guardar(STORAGE_LEADS, leads);
@@ -569,7 +572,7 @@ function renderDetalleLead() {
       div.innerHTML = `
         <div class="observacion-fecha">${formatearFechaCorta(obs.fecha)}</div>
         <div class="observacion-texto">${escapeHtml(obs.texto)}</div>
-        ${obs.volverContactar ? `<div class="observacion-seguimiento">Volver a contactar: ${formatearFechaCorta(obs.volverContactar)}</div>` : ""}
+        ${obs.volverContactar ? `<div class="observacion-seguimiento">Volver a contactar: ${formatearFechaCorta(obs.volverContactar)}${obs.volverContactarHora ? " " + obs.volverContactarHora : ""}</div>` : ""}
       `;
       contenedor.appendChild(div);
     });
@@ -594,12 +597,14 @@ document.getElementById("form-observacion").addEventListener("submit", (e) => {
 
   const marcarSeguimiento = document.getElementById("obs-marcar-seguimiento").checked;
   const fechaSeguimiento = document.getElementById("obs-fecha-seguimiento").value;
+  const horaSeguimiento = document.getElementById("obs-hora-seguimiento").value;
 
   const nuevaObservacion = {
     id: Date.now().toString(),
     fecha: new Date().toISOString().slice(0, 10),
     texto: document.getElementById("obs-texto").value.trim(),
-    volverContactar: marcarSeguimiento && fechaSeguimiento ? fechaSeguimiento : null
+    volverContactar: marcarSeguimiento && fechaSeguimiento ? fechaSeguimiento : null,
+    volverContactarHora: marcarSeguimiento && fechaSeguimiento ? (horaSeguimiento || null) : null
   };
 
   const nuevosLeads = cargar(STORAGE_LEADS).map(l => {
@@ -977,7 +982,7 @@ function renderDetalleExpediente() {
       div.innerHTML = `
         <div class="observacion-fecha">${formatearFechaCorta(obs.fecha)}</div>
         <div class="observacion-texto">${escapeHtml(obs.texto)}</div>
-        ${obs.volverContactar ? `<div class="observacion-seguimiento">Volver a contactar: ${formatearFechaCorta(obs.volverContactar)}</div>` : ""}
+        ${obs.volverContactar ? `<div class="observacion-seguimiento">Volver a contactar: ${formatearFechaCorta(obs.volverContactar)}${obs.volverContactarHora ? " " + obs.volverContactarHora : ""}</div>` : ""}
       `;
       contHistorialExp.appendChild(div);
     });
@@ -1562,10 +1567,9 @@ function renderDashboard() {
   const citasHoy = citas.filter(c => c.fecha === hoyStr).sort((a, b) => (a.hora || "").localeCompare(b.hora || ""));
   const citasAyerPendientes = citas.filter(c => c.fecha === ayerStr && estadoCitaNormalizado(c) === "pendiente");
 
-  const leadsSeguimientoHoy = leads.filter(l => {
-    const ultimo = (l.historial || []).slice().sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
-    return ultimo && ultimo.volverContactar && ultimo.volverContactar <= hoyStr;
-  });
+  const leadsSeguimientoHoy = leads
+    .map(l => ({ lead: l, ultimo: (l.historial || []).slice().sort((a, b) => b.fecha.localeCompare(a.fecha))[0] }))
+    .filter(({ ultimo }) => ultimo && ultimo.volverContactar && ultimo.volverContactar <= hoyStr);
 
   document.getElementById("dash-resumen").textContent =
     `${citasHoy.length} visita${citasHoy.length === 1 ? "" : "s"} · ` +
@@ -1618,10 +1622,10 @@ function renderDashboard() {
         accion: () => mostrarVista("view-agenda", "agenda")
       });
     });
-    leadsSeguimientoHoy.forEach(l => {
+    leadsSeguimientoHoy.forEach(({ lead: l, ultimo }) => {
       prioridades.push({
         urgente: true,
-        texto: `Seguimiento: ${l.nombre}`,
+        texto: `Seguimiento: ${l.nombre}${ultimo.volverContactarHora ? " — " + ultimo.volverContactarHora : ""}`,
         accion: () => abrirDetalleLead(l.id)
       });
     });
