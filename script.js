@@ -461,7 +461,8 @@ const LEAD_ESTADO_LABEL = {
 };
 
 function proximoSeguimientoDe(lead) {
-  const ultimo = (lead.historial || []).slice().sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
+  const historial = lead.historial || [];
+  const ultimo = historial[historial.length - 1];
   if (!ultimo || !ultimo.volverContactar) return null;
   return { fecha: ultimo.volverContactar, hora: ultimo.volverContactarHora || null };
 }
@@ -590,7 +591,7 @@ function renderDetalleLead() {
   btnEstado.textContent = LEAD_ESTADO_LABEL[lead.estado];
   btnEstado.className = `lead-badge ${lead.estado}`;
 
-  const historial = (lead.historial || []).slice().sort((a, b) => b.fecha.localeCompare(a.fecha));
+  const historial = (lead.historial || []).slice().reverse();
   const contenedor = document.getElementById("detalle-historial");
   contenedor.innerHTML = "";
 
@@ -1599,7 +1600,7 @@ function renderDashboard() {
   const citasAyerPendientes = citas.filter(c => c.fecha === ayerStr && estadoCitaNormalizado(c) === "pendiente");
 
   const leadsSeguimientoHoy = leads
-    .map(l => ({ lead: l, ultimo: (l.historial || []).slice().sort((a, b) => b.fecha.localeCompare(a.fecha))[0] }))
+    .map(l => { const h = l.historial || []; return { lead: l, ultimo: h[h.length - 1] }; })
     .filter(({ ultimo }) => ultimo && ultimo.volverContactar && ultimo.volverContactar <= hoyStr);
 
   document.getElementById("dash-resumen").textContent =
