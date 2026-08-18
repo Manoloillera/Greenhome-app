@@ -847,6 +847,22 @@ body {
   padding: 4px 0 12px 0;
 }
 
+.detalle-toolbar-derecha {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.btn-borrar-toolbar {
+  border: none;
+  background: transparent;
+  color: #c62828;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
 .btn-volver {
   border: none;
   background: transparent;

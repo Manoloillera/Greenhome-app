@@ -664,6 +664,15 @@ document.getElementById("btn-add-lead").addEventListener("click", () => {
   abrirModal("modal-lead");
 });
 
+document.getElementById("btn-borrar-lead").addEventListener("click", () => {
+  const lead = cargar(STORAGE_LEADS).find(l => l.id === leadActualId);
+  if (!lead) return;
+  if (!confirm(`¿Borrar el lead "${lead.nombre}"? Esta acción no se puede deshacer.`)) return;
+  guardar(STORAGE_LEADS, cargar(STORAGE_LEADS).filter(l => l.id !== leadActualId));
+  mostrarVista("view-leads", "leads");
+  renderLeads();
+});
+
 document.getElementById("btn-editar-lead").addEventListener("click", () => {
   const lead = cargar(STORAGE_LEADS).find(l => l.id === leadActualId);
   if (!lead) return;
@@ -1139,6 +1148,15 @@ document.getElementById("det-exp-estado").addEventListener("click", () => {
 
 document.getElementById("btn-editar-expediente").addEventListener("click", () => {
   abrirEditarExpediente(expedienteActualId);
+});
+
+document.getElementById("btn-borrar-expediente").addEventListener("click", () => {
+  const exp = cargar(STORAGE_EXPEDIENTES).find(x => x.id === expedienteActualId);
+  if (!exp) return;
+  if (!confirm(`¿Borrar el expediente "${exp.direccion}"? Esta acción no se puede deshacer.`)) return;
+  guardar(STORAGE_EXPEDIENTES, cargar(STORAGE_EXPEDIENTES).filter(x => x.id !== expedienteActualId));
+  mostrarVista("view-expedientes", "expedientes");
+  renderExpedientes();
 });
 
 /* ============ MEMORIA DE LA VISITA (PDF) ============ */
@@ -1644,7 +1662,8 @@ function renderDashboard() {
   }
 
   const prioridades = [];
-  const hayActividadHoy = citasHoy.length > 0 || leadsSeguimientoHoy.length > 0;
+  const totalVencidoYHoy = citasAyerPendientes.length + citasHoy.length + leadsSeguimientoHoy.length;
+  const hayActividadHoy = totalVencidoYHoy > 0;
 
   if (hayActividadHoy) {
     const itemsHoy = [];
@@ -1674,6 +1693,41 @@ function renderDashboard() {
         return (b.urgente ? 1 : 0) - (a.urgente ? 1 : 0);
       })
       .forEach(item => prioridades.push(item));
+
+    if (totalVencidoYHoy < 5) {
+      const espacio = 5 - totalVencidoYHoy;
+      const manana = new Date(hoy);
+      manana.setDate(manana.getDate() + 1);
+      const mananaStr = manana.toISOString().slice(0, 10);
+
+      const citasManana = citas.filter(c => c.fecha === mananaStr);
+      const leadsSeguimientoManana = leads
+        .map(l => { const h = l.historial || []; return { lead: l, ultimo: h[h.length - 1] }; })
+        .filter(({ ultimo }) => ultimo && ultimo.volverContactar === mananaStr);
+
+      const itemsManana = [];
+      citasManana.forEach(c => {
+        itemsManana.push({
+          hora: c.hora || "",
+          urgente: false,
+          texto: `Mañana: Visita ${c.hora} — ${c.titulo}${c.direccion ? " · " + c.direccion : ""}`,
+          accion: () => mostrarVista("view-agenda", "agenda")
+        });
+      });
+      leadsSeguimientoManana.forEach(({ lead: l, ultimo }) => {
+        itemsManana.push({
+          hora: ultimo.volverContactarHora || "",
+          urgente: false,
+          texto: `Mañana: Seguimiento: ${l.nombre}${ultimo.volverContactarHora ? " — " + ultimo.volverContactarHora : ""}`,
+          accion: () => abrirDetalleLead(l.id)
+        });
+      });
+
+      itemsManana
+        .sort((a, b) => (a.hora || "99:99").localeCompare(b.hora || "99:99"))
+        .slice(0, espacio)
+        .forEach(item => prioridades.push(item));
+    }
   } else {
     const itemsPendientes = [];
     expedientes.filter(x => x.estado === "en_curso").forEach(x => {
