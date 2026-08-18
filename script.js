@@ -6,7 +6,13 @@ function cargar(clave) {
 }
 
 function guardar(clave, valor) {
-  localStorage.setItem(clave, JSON.stringify(valor));
+  try {
+    localStorage.setItem(clave, JSON.stringify(valor));
+    return true;
+  } catch (error) {
+    alert("⚠️ No se pudo guardar: la memoria del navegador está llena. Los últimos cambios NO se guardaron. Borra alguna foto o memoria de visita antigua (Exportar copia de seguridad primero) e inténtalo de nuevo.");
+    return false;
+  }
 }
 
 function escapeHtml(texto) {
