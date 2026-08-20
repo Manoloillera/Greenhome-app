@@ -673,6 +673,29 @@ document.getElementById("btn-borrar-lead").addEventListener("click", () => {
   renderLeads();
 });
 
+document.getElementById("btn-crear-expediente").addEventListener("click", () => {
+  const lead = cargar(STORAGE_LEADS).find(l => l.id === leadActualId);
+  if (!lead) return;
+
+  const direccion = lead.referencia && lead.referencia.trim() ? lead.referencia.trim() : lead.nombre;
+  const checklist = CHECKLIST_POR_DEFECTO.map(nombre => ({ nombre, hecho: false }));
+
+  const nuevoExpediente = {
+    id: Date.now().toString() + "e",
+    direccion,
+    cliente: lead.nombre,
+    estado: "en_curso",
+    checklist,
+    origenLeadId: lead.id
+  };
+
+  const expedientes = cargar(STORAGE_EXPEDIENTES);
+  expedientes.push(nuevoExpediente);
+  guardar(STORAGE_EXPEDIENTES, expedientes);
+
+  abrirDetalleExpediente(nuevoExpediente.id);
+});
+
 document.getElementById("btn-editar-lead").addEventListener("click", () => {
   const lead = cargar(STORAGE_LEADS).find(l => l.id === leadActualId);
   if (!lead) return;
